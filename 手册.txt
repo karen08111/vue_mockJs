@@ -1,0 +1,94 @@
+
+
+1  安装mockjs
+
+npm install mockjs --save-dev
+
+
+
+2  src目录下创建mock.js   内容为:
+// 引入mockjs
+const Mock = require('mockjs');
+// 获取 mock.Random 对象
+const Random = Mock.Random;
+// mock一组数据
+const produceNewsData = function() {
+    let articles = [];
+    for (let i = 0; i < 100; i++) {
+        let newArticleObject = {
+            title: Random.csentence(5, 30), //  Random.csentence( min, max )
+            thumbnail_pic_s: Random.dataImage('300x250', 'mock的图片'), // Random.dataImage( size, text ) 生成一段随机的 Base64 图片编码
+            author_name: Random.cname(), // Random.cname() 随机生成一个常见的中文姓名
+            date: Random.date() + ' ' + Random.time() // Random.date()指示生成的日期字符串的格式,默认为yyyy-MM-dd；Random.time() 返回一个随机的时间字符串
+        }
+        articles.push(newArticleObject)
+    }
+ 
+    return {
+        articles: articles
+    }
+}
+ 
+// Mock.mock( url, post/get , 返回的数据)；
+Mock.mock('/news/index', 'post', produceNewsData);
+
+
+3  然后main.js引入
+require('./mock.js')
+
+4  src目录下创建axios文件夹 axios文件夹下创建api.js  编辑代码
+import axios from 'axios'
+import vue from 'vue'
+
+axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
+
+// 请求拦截器
+axios.interceptors.request.use(function(config) {
+    return config;
+  }, function(error) {
+    return Promise.reject(error);
+  })
+  // 响应拦截器
+axios.interceptors.response.use(function(response) {
+  return response;
+}, function(error) {
+  return Promise.reject(error);
+})
+
+// 封装axios的post请求
+export function fetch(url, params) {
+  return new Promise((resolve, reject) => {
+    axios.post(url, params)
+      .then(response => {
+        resolve(response.data);
+      })
+      .catch((error) => {
+        reject(error);
+      })
+  })
+}
+
+export default {
+  JH_news(url, params) {
+    return fetch(url, params);
+  }
+}
+
+5  然后vue组件中引用api.js
+import api from './../axios/api.js'
+
+引用后就可以调用了
+示例:
+data () {
+    return {
+	list:[]
+    }
+},
+created(){
+	api.JH_news('/news/index', 'type=top&key=123456')
+	  .then(res => {
+	    this.list=res.articles;
+			console.log(this.list);//这个就是获得的随机数据
+	});
+}
+
